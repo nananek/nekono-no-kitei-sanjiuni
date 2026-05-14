@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫乃の基底参拾弐 ⇄ xxd 相互変換器 (RFC-CAT 4649)</title>
+<style>
+  :root {
+    --bg: #f7f3ea;
+    --fg: #2a241c;
+    --muted: #6b6258;
+    --paper: #fffdf8;
+    --rule: rgba(0,0,0,0.18);
+    --accent: #a93838;
+    --accent-soft: #c97070;
+    --error-bg: #fde2e2;
+    --error-fg: #a93838;
+    --warn-bg: #fdf2d0;
+    --warn-fg: #8a6a1a;
+    --code-font: 'BIZ UDGothic', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', monospace;
+    --body-font: 'Noto Serif JP', 'Hiragino Mincho ProN', 'YuMincho', 'MS PMincho', serif;
+    --base-size: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1612;
+      --fg: #ece4d4;
+      --muted: #998c79;
+      --paper: #221d17;
+      --rule: rgba(255,255,255,0.18);
+      --accent: #e08585;
+      --accent-soft: #b86060;
+      --error-bg: #4a2222;
+      --error-fg: #ffb0b0;
+      --warn-bg: #3a3015;
+      --warn-fg: #e8c870;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--body-font); font-size: var(--base-size); line-height: 1.6; }
+  body { padding: 24px 16px 64px; max-width: 1280px; margin: 0 auto; }
+  header.site {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  header.site h1 { font-size: 1.6em; margin: 0 0 4px 0; letter-spacing: 0.08em; }
+  header.site .subtitle { color: var(--muted); font-size: 0.85em; margin: 0; }
+  header.site .stamp {
+    display: inline-block;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    padding: 2px 6px;
+    font-size: 0.7em;
+    margin-left: 8px;
+    letter-spacing: 0.1em;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+  main.converter { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; }
+  @media (min-width: 768px) {
+    main.converter { grid-template-columns: 1fr auto 1fr; gap: 12px; }
+  }
+  section.pane {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+  }
+  .pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .pane-header h2 { margin: 0; font-size: 1.05em; letter-spacing: 0.06em; }
+  .badge {
+    font-size: 0.7em;
+    padding: 2px 8px;
+    border-radius: 2px;
+    background: var(--muted);
+    color: var(--paper);
+    letter-spacing: 0.1em;
+    opacity: 0.3;
+    transition: opacity 0.15s;
+  }
+  .pane.is-source .badge { background: var(--accent); opacity: 1; }
+  textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 220px;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--code-font);
+    font-size: 1em;
+    line-height: 1.7;
+    padding: 10px 12px;
+    resize: vertical;
+    border-radius: 3px;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea[readonly] { background: transparent; color: var(--muted); cursor: default; }
+  .pane.is-source textarea { color: var(--fg); }
+  .pane.vertical textarea {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    min-height: 320px;
+    line-height: 1.9;
+  }
+  .pane-meta { margin-top: 6px; font-size: 0.78em; color: var(--muted); min-height: 1.4em; }
+  .pane-meta .warn { color: var(--accent); font-weight: bold; }
+  .pane-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  button {
+    font-family: inherit;
+    font-size: 0.85em;
+    padding: 5px 12px;
+    background: var(--paper);
+    color: var(--fg);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:active { transform: translateY(1px); }
+  .direction { display: flex; align-items: center; justify-content: center; padding: 8px; }
+  #flip-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 1.8em;
+    line-height: 1;
+    padding: 0;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    background: var(--paper);
+  }
+  #flip-btn:hover { background: var(--accent); color: var(--paper); }
+  @media (max-width: 767px) {
+    .direction { order: 99; width: 100%; }
+  }
+  section.status { margin-top: 16px; min-height: 1.5em; }
+  .msg {
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-left: 4px solid;
+    border-radius: 0 3px 3px 0;
+    font-size: 0.88em;
+    font-family: var(--code-font);
+  }
+  .msg.error { background: var(--error-bg); color: var(--error-fg); border-color: var(--error-fg); }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-fg); }
+  .msg .pos { font-weight: bold; }
+  .msg .ch { padding: 0 2px; background: rgba(255,255,255,0.6); border-radius: 2px; }
+  .error-detail {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-top: 6px;
+    font-family: var(--code-font);
+    font-size: 0.95em;
+    line-height: 1.7;
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+  .error-detail .bad { background: var(--accent); color: var(--paper); padding: 1px 2px; border-radius: 2px; }
+  .error-detail .rescued { background: var(--warn-bg); color: var(--warn-fg); text-decoration: underline dotted; padding: 1px 2px; border-radius: 2px; }
+  aside.options {
+    margin-top: 20px;
+    padding: 12px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 22px;
+    align-items: center;
+    font-size: 0.88em;
+  }
+  aside.options label { display: inline-flex; align-items: center; gap: 6px; }
+  footer.site {
+    margin-top: 32px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    font-size: 0.78em;
+    color: var(--muted);
+    text-align: center;
+  }
+  footer.site a { color: var(--accent); }
+  .seal {
+    display: inline-block;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    padding: 1px 4px;
+    font-size: 0.88em;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <h1>猫乃の基底参拾弐 <span class="stamp">RFC-CAT 4649</span></h1>
+  <p class="subtitle">xxd / 16進ダンプ ⇄ ひらがな Base32 双方向変換器 — 内容証明郵便で公開鍵を送りたい貴方へ</p>
+</header>
+
+<main class="converter">
+  <section class="pane is-source" id="pane-hex" data-side="hex">
+    <div class="pane-header">
+      <h2>xxd / hex</h2>
+      <span class="badge">入力</span>
+    </div>
+    <textarea id="hex-input" spellcheck="false" placeholder="`xxd` 出力か plain hex (xxd -p) を貼ってください。例: 4865 6c6c 6f"></textarea>
+    <div class="pane-meta">
+      <span id="hex-counter">0 文字 / 0 バイト</span>
+    </div>
+    <div class="pane-actions">
+      <button data-action="copy" data-target="hex-input">コピー</button>
+      <button data-action="clear" data-target="hex-input">クリア</button>
+    </div>
+  </section>
+
+  <div class="direction">
+    <button id="flip-btn" title="変換方向を切替" aria-label="変換方向を切替">⇄</button>
+  </div>
+
+  <section class="pane" id="pane-nekono" data-side="nekono">
+    <div class="pane-header">
+      <h2>猫乃の基底参拾弐</h2>
+      <span class="badge">入力</span>
+    </div>
+    <textarea id="nekono-input" spellcheck="false" readonly placeholder="ここに ひらがな + 句点 が出ます。" aria-live="polite"></textarea>
+    <div class="pane-meta">
+      <span id="nekono-counter">0 文字</span>
+    </div>
+    <div class="pane-actions">
+      <button data-action="copy" data-target="nekono-input">コピー</button>
+      <button data-action="clear" data-target="nekono-input">クリア</button>
+      <button id="download-btn">.txt 保存</button>
+    </div>
+  </section>
+</main>
+
+<section class="status" id="status" aria-live="polite"></section>
+<div class="error-detail" id="error-detail" hidden></div>
+
+<aside class="options">
+  <label><input type="checkbox" id="opt-lenient" checked> 寛容モード <span class="seal" title="カタカナ救済・パディング補正">寛</span></label>
+  <label><input type="checkbox" id="opt-vertical"> 縦書きプレビュー</label>
+  <label><input type="checkbox" id="opt-aria" checked> 結果の読み上げ (aria-live)</label>
+  <label>文字サイズ <input type="range" id="opt-font" min="12" max="32" step="1" value="16"> <span id="opt-font-display">16px</span></label>
+  <button id="sample-btn" title="テストベクトルから1本ロード">例文を入れる</button>
+</aside>
+
+<footer class="site">
+  <p>仕様: 猫乃名無 (仮) 著 CC BY 4.0 / 実装: MIT / RFC番号 4649 は IETF 非公認の語呂合わせです (本物の Base32 は <a href="https://www.rfc-editor.org/rfc/rfc4648" target="_blank" rel="noopener">RFC 4648</a>)。</p>
+  <p>テスト: <a href="./test.html">test.html</a> ・ ソース: <a href="https://github.com/nananek/nekono-no-kitei-sanjiuni" target="_blank" rel="noopener">GitHub</a></p>
+</footer>
+
+<script src="./nekono.js"></script>
+<script>
+(() => {
+  'use strict';
+  const { nekonoEncode, nekonoFormat, nekonoDecode, parseXxd, formatXxd, SEPARATOR } = window.NekonoBase32;
+
+  const $ = id => document.getElementById(id);
+  const hexInput = $('hex-input');
+  const nekonoInput = $('nekono-input');
+  const paneHex = $('pane-hex');
+  const paneNekono = $('pane-nekono');
+  const flipBtn = $('flip-btn');
+  const sampleBtn = $('sample-btn');
+  const downloadBtn = $('download-btn');
+  const optLenient = $('opt-lenient');
+  const optVertical = $('opt-vertical');
+  const optAria = $('opt-aria');
+  const optFont = $('opt-font');
+  const optFontDisplay = $('opt-font-display');
+  const status = $('status');
+  const errorDetail = $('error-detail');
+  const hexCounter = $('hex-counter');
+  const nekonoCounter = $('nekono-counter');
+
+  const state = { mode: 'hex2nekono', lastBytes: new Uint8Array(0) };
+
+  function setMode(mode) {
+    state.mode = mode;
+    if (mode === 'hex2nekono') {
+      hexInput.readOnly = false;
+      nekonoInput.readOnly = true;
+      paneHex.classList.add('is-source');
+      paneNekono.classList.remove('is-source');
+      paneHex.querySelector('.badge').textContent = '入力';
+      paneNekono.querySelector('.badge').textContent = '出力';
+    } else {
+      hexInput.readOnly = true;
+      nekonoInput.readOnly = false;
+      paneNekono.classList.add('is-source');
+      paneHex.classList.remove('is-source');
+      paneHex.querySelector('.badge').textContent = '出力';
+      paneNekono.querySelector('.badge').textContent = '入力';
+    }
+    convert();
+  }
+
+  function debounce(fn, ms) {
+    let t = null;
+    return (...a) => { if (t) clearTimeout(t); t = setTimeout(() => { t = null; fn(...a); }, ms); };
+  }
+
+  function clearStatus() {
+    status.innerHTML = '';
+    errorDetail.hidden = true;
+    errorDetail.innerHTML = '';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function showMessages(errors, warnings, sourceText) {
+    clearStatus();
+    const frag = document.createDocumentFragment();
+    for (const e of errors) {
+      const div = document.createElement('div');
+      div.className = 'msg error';
+      if (e.pos !== undefined) {
+        div.innerHTML = `<span class="pos">位置 ${e.pos+1}</span>: <span class="ch">${escapeHtml(e.char || '')}</span> — ${escapeHtml(e.msg)}`;
+      } else {
+        div.textContent = e.msg;
+      }
+      frag.appendChild(div);
+    }
+    for (const w of warnings) {
+      const div = document.createElement('div');
+      div.className = 'msg warn';
+      if (w.pos !== undefined) {
+        div.innerHTML = `<span class="pos">位置 ${w.pos+1}</span>: ${escapeHtml(w.msg)}`;
+      } else {
+        div.textContent = w.msg;
+      }
+      frag.appendChild(div);
+    }
+    status.appendChild(frag);
+
+    if (sourceText !== undefined && (errors.length > 0 || warnings.some(w => w.pos !== undefined))) {
+      const badPositions = new Map();
+      for (const e of errors) if (e.pos !== undefined) badPositions.set(e.pos, 'bad');
+      for (const w of warnings) if (w.pos !== undefined && !badPositions.has(w.pos)) badPositions.set(w.pos, 'rescued');
+      if (badPositions.size > 0) {
+        errorDetail.hidden = false;
+        const chars = [...sourceText];
+        let html = '';
+        for (let i = 0; i < chars.length; i++) {
+          const kind = badPositions.get(i);
+          const ch = chars[i];
+          const display = ch === '\n' ? '↵\n' : escapeHtml(ch);
+          html += kind ? `<span class="${kind}">${display}</span>` : display;
+        }
+        errorDetail.innerHTML = html;
+      }
+    }
+  }
+
+  function updateCounters(bytes, nekonoText) {
+    hexCounter.textContent = `${bytes.length} バイト / hex: ${bytes.length * 2} 文字`;
+    const visibleChars = [...nekonoText].filter(c => c !== '\n' && c !== SEPARATOR).length;
+    const remaining = 520 - visibleChars;
+    if (remaining >= 0) {
+      nekonoCounter.textContent = `${visibleChars} 文字 / 内容証明520字制限まで残 ${remaining} 字`;
+    } else {
+      nekonoCounter.innerHTML = `${visibleChars} 文字 / <span class="warn">⚠ 内容証明520字制限を ${-remaining} 字超過</span>`;
+    }
+  }
+
+  function convert() {
+    clearStatus();
+    if (state.mode === 'hex2nekono') {
+      const text = hexInput.value;
+      const parsed = parseXxd(text);
+      if (parsed.error) {
+        nekonoInput.value = '';
+        showMessages([{msg: parsed.msg}], [], text);
+        updateCounters(new Uint8Array(0), '');
+        return;
+      }
+      state.lastBytes = parsed.bytes;
+      const formatted = nekonoFormat(nekonoEncode(parsed.bytes));
+      nekonoInput.value = formatted;
+      updateCounters(parsed.bytes, formatted);
+    } else {
+      const text = nekonoInput.value;
+      const decoded = nekonoDecode(text, optLenient.checked);
+      if (decoded.error) {
+        hexInput.value = '';
+        showMessages(decoded.errors || [], decoded.warnings || [], text);
+        updateCounters(new Uint8Array(0), text);
+        return;
+      }
+      state.lastBytes = decoded.bytes;
+      hexInput.value = formatXxd(decoded.bytes);
+      if ((decoded.warnings || []).length > 0) showMessages([], decoded.warnings, text);
+      updateCounters(decoded.bytes, text);
+    }
+  }
+
+  const convertDebounced = debounce(convert, 100);
+
+  hexInput.addEventListener('input', () => { if (state.mode === 'hex2nekono') convertDebounced(); });
+  nekonoInput.addEventListener('input', () => { if (state.mode === 'nekono2hex') convertDebounced(); });
+
+  flipBtn.addEventListener('click', () => {
+    setMode(state.mode === 'hex2nekono' ? 'nekono2hex' : 'hex2nekono');
+    (state.mode === 'hex2nekono' ? hexInput : nekonoInput).focus();
+  });
+
+  optLenient.addEventListener('change', convert);
+  optVertical.addEventListener('change', () => {
+    paneNekono.classList.toggle('vertical', optVertical.checked);
+  });
+  optAria.addEventListener('change', () => {
+    nekonoInput.setAttribute('aria-live', optAria.checked ? 'polite' : 'off');
+    status.setAttribute('aria-live', optAria.checked ? 'polite' : 'off');
+  });
+  optFont.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--base-size', optFont.value + 'px');
+    optFontDisplay.textContent = optFont.value + 'px';
+  });
+
+  document.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.action;
+      const target = $(btn.dataset.target);
+      if (action === 'copy') {
+        try {
+          await navigator.clipboard.writeText(target.value);
+          const orig = btn.textContent;
+          btn.textContent = '✓ コピー済';
+          setTimeout(() => { btn.textContent = orig; }, 1200);
+        } catch (e) {
+          target.select();
+          document.execCommand('copy');
+        }
+      } else if (action === 'clear') {
+        target.value = '';
+        target.focus();
+        convert();
+      }
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const text = nekonoInput.value;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nekono-base32.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // §4 テストベクトル (4649 は修正後の値)
+  const SAMPLES = [
+    { label: 'A', hex: '41' },
+    { label: 'Hi', hex: '4869' },
+    { label: 'Cat', hex: '436174' },
+    { label: 'Hello', hex: '48656c6c6f' },
+    { label: '猫 (e78cab)', hex: 'e78cab' },
+    { label: '4649', hex: '34363439' },
+    { label: '吾輩は猫である', hex: 'e590beebbca9e381afe78cabe381a7e38182e3828b' }
+  ];
+  sampleBtn.addEventListener('click', () => {
+    const s = SAMPLES[Math.floor(Math.random() * SAMPLES.length)];
+    setMode('hex2nekono');
+    hexInput.value = s.hex;
+    convert();
+    const orig = '例文を入れる';
+    sampleBtn.textContent = `例文「${s.label}」`;
+    setTimeout(() => { sampleBtn.textContent = orig; }, 1500);
+  });
+
+  setMode('hex2nekono');
+  hexInput.value = '4865 6c6c 6f';
+  convert();
+})();
+</script>
+
+</body>
+</html>

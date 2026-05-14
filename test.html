@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫乃の基底参拾弐 — 単体テスト</title>
+<style>
+  body {
+    font-family: 'BIZ UDGothic', 'Hiragino Sans', monospace;
+    margin: 24px;
+    background: #fafafa;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #181816; color: #e8e0d0; }
+    table { border-color: #444; }
+    tr { border-color: #333; }
+    .pass { color: #6cd068; }
+    .fail { color: #ff8080; }
+  }
+  h1 { font-size: 1.4em; }
+  .summary {
+    font-size: 1.2em;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+    background: #fff;
+    border: 1px solid #ddd;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .summary.ok { background: #e6f6e0; border-color: #8cc880; }
+  .summary.bad { background: #fde0e0; border-color: #d88080; }
+  .pass { color: #2a7a26; font-weight: bold; }
+  .fail { color: #b22222; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: top; word-break: break-all; }
+  th { background: #f0ebe0; font-weight: normal; font-size: 0.9em; }
+  tr.section td { background: #faf6ed; font-weight: bold; padding-top: 12px; }
+  .info { color: #777; font-size: 0.85em; }
+  pre { margin: 4px 0; white-space: pre-wrap; font-size: 0.9em; }
+  button { padding: 6px 14px; font-size: 0.95em; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>猫乃の基底参拾弐 — 単体テスト</h1>
+<p class="info">RFC-CAT 4649 §4 (静的テストベクトル + ラウンドトリップ + ファズ + 寛容性 + xxd パーサ)</p>
+
+<div class="summary" id="summary">テスト準備中…</div>
+<p>
+  <label>ファズ件数: <input type="number" id="fuzz-count" value="1000" min="1" max="100000" step="100"></label>
+  <button id="rerun">再実行</button>
+  <a href="./index.html">← 本体に戻る</a>
+</p>
+
+<table id="results">
+  <thead><tr><th style="width:6em;">結果</th><th>テスト</th><th>詳細</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<script src="./nekono.js"></script>
+<script>
+(() => {
+  'use strict';
+  const N = window.NekonoBase32;
+  const tbody = document.querySelector('#results tbody');
+  const summary = document.getElementById('summary');
+
+  function row(section, name, ok, detail) {
+    const tr = document.createElement('tr');
+    if (section) tr.className = 'section';
+    tr.innerHTML = `
+      <td>${ok === null ? '' : ok ? '<span class="pass">PASS</span>' : '<span class="fail">FAIL</span>'}</td>
+      <td>${name}</td>
+      <td>${detail || ''}</td>`;
+    tbody.appendChild(tr);
+    return ok === false;
+  }
+
+  function sectionRow(name) {
+    const tr = document.createElement('tr');
+    tr.className = 'section';
+    tr.innerHTML = `<td></td><td colspan="2">${name}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  function bytesFromHex(hex) {
+    const b = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < b.length; i++) b[i] = parseInt(hex.substr(i*2, 2), 16);
+    return b;
+  }
+  function hex(b) { return [...b].map(x => x.toString(16).padStart(2,'0')).join(''); }
+  function eqBytes(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  let passes = 0, fails = 0;
+  function check(section, name, cond, detail) {
+    const failed = row(false, name, !!cond, detail || '');
+    if (cond) passes++; else fails++;
+  }
+
+  function runAll() {
+    tbody.innerHTML = '';
+    passes = 0; fails = 0;
+    summary.textContent = '実行中…';
+
+    // ===== §4 静的テストベクトル =====
+    sectionRow('§4 静的テストベクトル (encode)');
+    const vectors = [
+      { label: '(空)', input: '', expected: '' },
+      { label: 'A', input: '41', expected: 'けお。。。。。。' },
+      { label: 'Hi', input: '4869', expected: 'こいにち。。。。' },
+      { label: 'Cat', input: '436174', expected: 'けせちひけ。。。' },
+      { label: 'Hello', input: '48656c6c6f', expected: 'こいとはふむえた' },
+      { label: '猫', input: 'e78cab', expected: 'もゆきさは。。。' },
+      { label: '4649 (修正後)', input: '34363439', expected: 'きちむえけそけ。' }
+    ];
+    for (const v of vectors) {
+      const bytes = bytesFromHex(v.input);
+      const actual = N.nekonoEncode(bytes);
+      check('encode', `encode "${v.label}"`, actual === v.expected,
+        `期待: <code>${v.expected || '(空)'}</code><br>実値: <code>${actual || '(空)'}</code>`);
+    }
+
+    sectionRow('§4 静的テストベクトル (decode)');
+    for (const v of vectors) {
+      const r = N.nekonoDecode(v.expected, true);
+      const expectedBytes = bytesFromHex(v.input);
+      const ok = !r.error && eqBytes(r.bytes, expectedBytes);
+      check('decode', `decode "${v.label}"`, ok,
+        `期待: <code>${v.input || '(空)'}</code><br>実値: <code>${r.error ? 'ERROR: '+JSON.stringify(r.errors) : hex(r.bytes)}</code>`);
+    }
+
+    // ===== §4.1 ラウンドトリップ =====
+    sectionRow('§4.1 ラウンドトリップ (固定ベクトル)');
+    for (const v of vectors) {
+      const bytes1 = bytesFromHex(v.input);
+      const xxd1 = N.formatXxd(bytes1);
+      const r1 = N.parseXxd(xxd1);
+      const ok1 = !r1.error && eqBytes(r1.bytes, bytes1);
+      check('rt-xxd', `bytes → xxd → bytes "${v.label}"`, ok1);
+
+      const nekono1 = N.nekonoEncode(bytes1);
+      const r2 = N.nekonoDecode(nekono1, false); // 厳格モードでも通るべき
+      const ok2 = !r2.error && eqBytes(r2.bytes, bytes1);
+      check('rt-nek', `bytes → nekono → bytes "${v.label}" (厳格)`, ok2);
+
+      const formatted = N.nekonoFormat(nekono1);
+      const r3 = N.nekonoDecode(formatted, true);
+      const ok3 = !r3.error && eqBytes(r3.bytes, bytes1);
+      check('rt-fmt', `bytes → nekonoFormat → bytes "${v.label}"`, ok3);
+    }
+
+    // ===== §4.2 ファズテスト =====
+    const fuzzCount = parseInt(document.getElementById('fuzz-count').value, 10) || 1000;
+    sectionRow(`§4.2 ファズテスト (1〜1024 バイト × ${fuzzCount} 本)`);
+
+    let fuzzFails = 0;
+    const failSamples = [];
+    const t0 = performance.now();
+    for (let i = 0; i < fuzzCount; i++) {
+      const len = 1 + Math.floor(Math.random() * 1024);
+      const data = new Uint8Array(len);
+      crypto.getRandomValues(data);
+      const enc = N.nekonoEncode(data);
+      const fmt = N.nekonoFormat(enc);
+      const r = N.nekonoDecode(fmt, false);
+      if (r.error || !eqBytes(r.bytes, data)) {
+        fuzzFails++;
+        if (failSamples.length < 3) failSamples.push({len, data: hex(data).slice(0, 64) + '…', enc: enc.slice(0, 80) + '…'});
+      }
+    }
+    const t1 = performance.now();
+    check('fuzz', `${fuzzCount}本ラウンドトリップ`, fuzzFails === 0,
+      `実行 ${(t1-t0).toFixed(0)}ms / 失敗 ${fuzzFails} 本${fuzzFails ? '<br>例: '+JSON.stringify(failSamples) : ''}`);
+
+    // ===== デコーダ寛容性 =====
+    sectionRow('§2 デコーダ寛容性');
+
+    // §2.1 カタカナ
+    {
+      const r = N.nekonoDecode('コイニチ。。。。', true);
+      const expected = bytesFromHex('4869');
+      check('lenient', 'カタカナ「コイニチ」→「こいにち」', !r.error && eqBytes(r.bytes, expected));
+    }
+    // §2.2 OCR 救済
+    {
+      const r = N.nekonoDecode('こいにツ。。。。', true);
+      const expected = N.nekonoDecode('こいにし。。。。', true);
+      check('lenient', 'OCR救済 ツ→し (警告つき受理)',
+        !r.error && eqBytes(r.bytes, expected.bytes) && r.warnings.some(w => /OCR/.test(w.msg)),
+        r.warnings.map(w => w.msg).join(' / '));
+    }
+    {
+      const r = N.nekonoDecode('こいにヘ。。。。', true);
+      check('lenient', 'OCR救済 ヘ→ふ (警告つき受理)',
+        !r.error && r.warnings.some(w => /OCR/.test(w.msg)));
+    }
+    // §2.3 無視
+    {
+      const r = N.nekonoDecode('こい にち\n・、。。。。', true);
+      const expected = bytesFromHex('4869');
+      check('lenient', '空白・中黒・読点・改行を無視', !r.error && eqBytes(r.bytes, expected));
+    }
+    // §2.4 拒絶
+    {
+      const r = N.nekonoDecode('こいぬち。。。。', true);
+      check('reject', '拒絶字「ぬ」→ エラー', r.error && r.errors[0].pos !== undefined && r.errors[0].char === 'ぬ',
+        r.error ? JSON.stringify(r.errors[0]) : 'no error');
+    }
+    {
+      const r = N.nekonoDecode('こいつち。。。。', true);
+      check('reject', '拒絶字「つ」→ エラー', r.error && r.errors[0].char === 'つ');
+    }
+    {
+      const r = N.nekonoDecode('こいヌち。。。。', true);
+      check('reject', '非マップ・カタカナ「ヌ」→ エラー', r.error);
+    }
+    // §2.5 パディング
+    {
+      const lenient = N.nekonoDecode('こいにち', true);
+      const strict = N.nekonoDecode('こいにち', false);
+      check('padding', '寛容: パディング省略を補正', !lenient.error && eqBytes(lenient.bytes, bytesFromHex('4869'))
+        && lenient.warnings.some(w => /補正/.test(w.msg)));
+      check('padding', '厳格: パディング省略をエラー', strict.error);
+    }
+    {
+      const r = N.nekonoDecode('こいにち。。', true);
+      check('padding', '寛容: パディング不足を補正', !r.error && eqBytes(r.bytes, bytesFromHex('4869')));
+    }
+
+    // ===== xxd パーサ =====
+    sectionRow('§3 xxd パーサ');
+    {
+      const r = N.parseXxd('00000000: 4865 6c6c 6f2c 2057 6f72 6c64 210a       Hello, World!.');
+      check('xxd', '既定形式 (ASCII列を無視)', !r.error && hex(r.bytes) === '48656c6c6f2c20576f726c64210a');
+    }
+    {
+      const r = N.parseXxd('48656c6c6f');
+      check('xxd', 'plain hex (xxd -p)', !r.error && hex(r.bytes) === '48656c6c6f');
+    }
+    {
+      const r = N.parseXxd('48656c6c6');
+      check('xxd', '奇数桁 → エラー', r.error);
+    }
+    {
+      const r = N.parseXxd('Hello こんにちは\n42 41');
+      check('xxd', '非hex字混入の plain → 抽出のみ', !r.error && hex(r.bytes) === '4241',
+        '結果: ' + (r.error ? r.msg : hex(r.bytes)));
+    }
+    {
+      // 16進ぽいASCIIが入っていても: の後の2スペース境界で切れる
+      const r = N.parseXxd('00000000: 4244 4546                                BDEF');
+      check('xxd', '既定形式: ASCII列にhex字が含まれても本文のみ', !r.error && hex(r.bytes) === '42444546');
+    }
+
+    // ===== 完了 =====
+    const total = passes + fails;
+    summary.className = 'summary ' + (fails === 0 ? 'ok' : 'bad');
+    summary.innerHTML = `<span class="pass">PASS ${passes}</span> / <span class="fail">FAIL ${fails}</span> / 合計 ${total}`;
+  }
+
+  document.getElementById('rerun').addEventListener('click', runAll);
+  runAll();
+})();
+</script>
+
+</body>
+</html>
