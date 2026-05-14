@@ -131,18 +131,13 @@
 <body>
 
 <header class="site">
-  <h1>Request-for-Cat 4649: 猫乃の基底参拾弐 (Nekono Base32) ⇄ xxd 相互変換器 仕様書 <span class="stamp">仕様</span></h1>
+  <h1>Request-for-Cat 4649: 猫乃の基底参拾弐 (Nekono's Base32) ⇄ xxd 相互変換器 仕様書 <span class="stamp">仕様</span></h1>
   <p class="subtitle">内容証明郵便で公開鍵を送るための、文字種規定完全準拠なバイナリ符号化方式</p>
 </header>
 
 <blockquote>
 Request For Cat 4649 — 猫乃名無 (仮) 監修
 </blockquote>
-
-<div class="note">
-<strong>本実装での誤植訂正 (§4 / 4649 行):</strong> 原典では <code>4649</code> ASCII の符号化結果が <code>きそきけきそきす</code> とされていますが、§1.2 のパディング表 (4バイト → 7文字 + 1パディング) と矛盾します。
-本実装では正しい <code>きちむえけそけ。</code> を採用しています。
-</div>
 
 <nav class="toc" aria-label="目次">
   <strong>目次</strong>
@@ -160,7 +155,7 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
 </nav>
 
 <h2 id="sec-0">§0. プロジェクト概要</h2>
-<p>xxd 形式の16進ダンプと <strong>Nekono Base32</strong> (ひらがな32文字 + 大字パディング) との間を双方向変換する単一ファイルの静的Webページを作る。ビルドステップなし、<code>index.html</code> 1枚で完結。ブラウザにD&Dまたはコピペで動く。</p>
+<p>xxd 形式の16進ダンプと <strong>Nekono's Base32</strong> (ひらがな32文字 + 大字パディング) との間を双方向変換する単一ファイルの静的Webページを作る。ビルドステップなし、<code>index.html</code> 1枚で完結。ブラウザにD&Dまたはコピペで動く。</p>
 
 <h2 id="sec-1">§1. 符号化仕様 (Encoding Spec)</h2>
 
@@ -285,10 +280,9 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
     <tr><td><code>Cat</code></td><td><code>436174</code></td><td><code>けせちひけ。。。</code></td></tr>
     <tr><td><code>Hello</code></td><td><code>48656c6c6f</code></td><td><code>こいとはふむえた</code></td></tr>
     <tr><td><code>猫</code></td><td><code>e78cab</code></td><td><code>もゆきさは。。。</code></td></tr>
-    <tr><td><code>4649</code> (ASCII)</td><td><code>34363439</code></td><td><code>きちむえけそけ。</code> †</td></tr>
+    <tr><td><code>4649</code> (ASCII)</td><td><code>34363439</code></td><td><code>きちむえけそけ。</code></td></tr>
   </tbody>
 </table>
-<p style="font-size: 0.85em; color: var(--muted);">† 原典 <code>きそきけきそきす</code> は §1.2 (4バイト → 7文字 + 1パディング) と整合しないため、実装では <code>きちむえけそけ。</code> に訂正。詳細は冒頭の注記。</p>
 
 <h3>§4.1 ラウンドトリップテスト</h3>
 <p><code>xxd → Nekono32 → xxd</code> および <code>Nekono32 → xxd → Nekono32</code> が恒等関数になることを単体テストで確認すること (テストハーネスは別ファイル <code>test.html</code> に作ってもよい)。</p>
@@ -302,7 +296,7 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
 <p>縦2ペイン (モバイル) / 横2ペイン (デスクトップ、768px以上)。中央に変換方向ボタン。</p>
 
 <pre><code>┌──────────────────────┐  ┌──────────────────────┐
-│  xxd / hex           │  │  Nekono Base32       │
+│  xxd / hex           │  │  Nekono's Base32     │
 │  ┌────────────────┐  │  │  ┌────────────────┐  │
 │  │                │  │⇄ │  │                │  │
 │  │  (textarea)    │  │  │  │  (textarea)    │  │

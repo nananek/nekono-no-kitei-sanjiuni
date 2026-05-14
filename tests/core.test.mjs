@@ -29,7 +29,7 @@ const VECTORS = [
   { label: 'Cat',           input: '436174',     expected: 'けせちひけ。。。' },
   { label: 'Hello',         input: '48656c6c6f', expected: 'こいとはふむえた' },
   { label: '猫',            input: 'e78cab',     expected: 'もゆきさは。。。' },
-  { label: '4649 (修正後)', input: '34363439',   expected: 'きちむえけそけ。' }
+  { label: '4649', input: '34363439',   expected: 'きちむえけそけ。' }
 ];
 
 describe('§4 静的テストベクトル', () => {

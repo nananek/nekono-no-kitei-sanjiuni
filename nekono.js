@@ -1,4 +1,4 @@
-// 猫乃の基底参拾弐 (Nekono Base32) コア実装
+// 猫乃の基底参拾弐 (Nekono's Base32) コア実装
 // Request-for-Cat 4649 §1〜§3 準拠 — エンコーダ・デコーダ・xxdパーサ
 // UMD: ブラウザでは globalThis.NekonoBase32、Node では module.exports
 
