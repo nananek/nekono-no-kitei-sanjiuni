@@ -112,6 +112,32 @@
   }
   .toc ol { padding-left: 1.3em; margin: 0.3em 0; }
   .toc li { margin: 0.15em 0; }
+  .joke-banner {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--accent) 0 14px,
+      transparent 14px 28px
+    );
+    padding: 3px;
+    margin: 0 0 20px 0;
+    border-radius: 4px;
+  }
+  .joke-banner-inner {
+    background: var(--paper);
+    border-radius: 2px;
+    padding: 14px 18px;
+    text-align: center;
+  }
+  .joke-banner h2 {
+    margin: 0 0 6px 0;
+    border: 0;
+    color: var(--accent);
+    font-size: 1.1em;
+    letter-spacing: 0.1em;
+    padding: 0;
+  }
+  .joke-banner p { margin: 4px 0; font-size: 0.92em; }
+  .joke-banner .small { font-size: 0.82em; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -120,6 +146,14 @@
   <h1>Request-for-Cat 4649: Nekono's Base32 符号化仕様 <span class="stamp">仕様</span></h1>
   <p class="subtitle">猫乃の基底参拾弐 — 任意バイナリをひらがな32文字に符号化する方式</p>
 </header>
+
+<aside class="joke-banner" role="note" aria-label="ジョーク仕様の告知">
+  <div class="joke-banner-inner">
+    <h2>これはジョーク仕様です</h2>
+    <p>「内容証明で公開鍵を送りたい」という前提自体が冗談です。本気で運用しないでください。</p>
+    <p class="small">Request-for-Cat 番号 4649 (「ヨロシク」の語呂合わせ) は IETF 非公認のパロディです。本物の Base32 は <a href="https://www.rfc-editor.org/rfc/rfc4648" target="_blank" rel="noopener">RFC 4648</a>。</p>
+  </div>
+</aside>
 
 <blockquote>
 Request For Cat 4649 — 猫乃名無 (仮) 監修<br>
