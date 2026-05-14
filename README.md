@@ -3,6 +3,7 @@
 **Request-for-Cat 4649** 準拠の、内容証明郵便で送るためのひらがな Base32 双方向変換器。
 
 公開URL: <https://nananek.github.io/nekono-no-kitei-sanjiuni/>
+仕様書: <https://nananek.github.io/nekono-no-kitei-sanjiuni/spec.html>
 
 ## これは何
 
@@ -22,7 +23,7 @@
 
 ## 仕様
 
-ユーザのプロンプトに全文掲載されている Request-for-Cat 4649 を参照。要点:
+完全な仕様書は [spec.html](https://nananek.github.io/nekono-no-kitei-sanjiuni/spec.html) を参照。要点:
 
 | 値 | 字 | 値 | 字 | 値 | 字 | 値 | 字 |
 |-:|:-:|-:|:-:|-:|:-:|-:|:-:|
