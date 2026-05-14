@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Request-for-Cat 4649: 猫乃の基底参拾弐 仕様書</title>
+<title>Request-for-Cat 4649: Nekono's Base32 符号化仕様</title>
 <style>
   :root {
     --bg: #f7f3ea;
@@ -12,8 +12,6 @@
     --paper: #fffdf8;
     --rule: rgba(0,0,0,0.18);
     --accent: #a93838;
-    --note-bg: #fdf2d0;
-    --note-fg: #8a6a1a;
     --code-bg: rgba(0,0,0,0.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -24,8 +22,6 @@
       --paper: #221d17;
       --rule: rgba(255,255,255,0.18);
       --accent: #e08585;
-      --note-bg: #3a3015;
-      --note-fg: #e8c870;
       --code-bg: rgba(255,255,255,0.08);
     }
   }
@@ -50,7 +46,6 @@
   }
   h2 { margin-top: 2em; font-size: 1.3em; border-bottom: 1px solid var(--rule); padding-bottom: 4px; letter-spacing: 0.05em; }
   h3 { margin-top: 1.6em; font-size: 1.1em; color: var(--accent); }
-  h4 { margin-top: 1.2em; font-size: 1em; }
   blockquote {
     border-left: 4px solid var(--accent);
     margin: 1em 0;
@@ -95,15 +90,6 @@
   td.center, th.center { text-align: center; }
   ul, ol { padding-left: 1.5em; }
   li { margin: 0.2em 0; }
-  .note {
-    background: var(--note-bg);
-    color: var(--note-fg);
-    border-left: 4px solid var(--note-fg);
-    padding: 10px 14px;
-    margin: 1em 0;
-    border-radius: 0 4px 4px 0;
-    font-size: 0.92em;
-  }
   .alphabet-table td, .alphabet-table th { padding: 3px 8px; text-align: center; }
   .alphabet-table .hiragana { font-size: 1.1em; }
   hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
@@ -131,36 +117,40 @@
 <body>
 
 <header class="site">
-  <h1>Request-for-Cat 4649: 猫乃の基底参拾弐 (Nekono's Base32) ⇄ xxd 相互変換器 仕様書 <span class="stamp">仕様</span></h1>
-  <p class="subtitle">内容証明郵便で公開鍵を送るための、文字種規定完全準拠なバイナリ符号化方式</p>
+  <h1>Request-for-Cat 4649: Nekono's Base32 符号化仕様 <span class="stamp">仕様</span></h1>
+  <p class="subtitle">猫乃の基底参拾弐 — 任意バイナリをひらがな32文字に符号化する方式</p>
 </header>
 
 <blockquote>
-Request For Cat 4649 — 猫乃名無 (仮) 監修
+Request For Cat 4649 — 猫乃名無 (仮) 監修<br>
+本仕様は <strong>符号化方式</strong> の定義であり、特定の実装・UIには依存しない。リファレンス実装の概要は <a href="./index.html">本体</a> および <a href="https://github.com/nananek/nekono-no-kitei-sanjiuni" target="_blank" rel="noopener">GitHub</a> を参照。
 </blockquote>
 
 <nav class="toc" aria-label="目次">
   <strong>目次</strong>
   <ol>
-    <li><a href="#sec-0">プロジェクト概要</a></li>
+    <li><a href="#sec-0">概要と動機</a></li>
     <li><a href="#sec-1">符号化仕様</a></li>
     <li><a href="#sec-2">デコーダ寛容性</a></li>
-    <li><a href="#sec-3">xxd 形式</a></li>
+    <li><a href="#sec-3">xxd 相互運用</a></li>
     <li><a href="#sec-4">テストベクトル</a></li>
-    <li><a href="#sec-5">UI 要件</a></li>
-    <li><a href="#sec-6">技術スタック</a></li>
-    <li><a href="#sec-7">ライセンス・帰属</a></li>
-    <li><a href="#sec-8">将来拡張 (Out of Scope)</a></li>
+    <li><a href="#sec-5">参考実装とライセンス</a></li>
+    <li><a href="#sec-6">将来拡張 (Out of Scope)</a></li>
   </ol>
 </nav>
 
-<h2 id="sec-0">§0. プロジェクト概要</h2>
-<p>xxd 形式の16進ダンプと <strong>Nekono's Base32</strong> (ひらがな32文字 + 大字パディング) との間を双方向変換する単一ファイルの静的Webページを作る。ビルドステップなし、<code>index.html</code> 1枚で完結。ブラウザにD&Dまたはコピペで動く。</p>
+<h2 id="sec-0">§0. 概要と動機</h2>
+
+<p><strong>Nekono's Base32</strong> は、任意のバイト列を <strong>ひらがな 32 文字 + 句点パディング</strong> で表現する Base32 系符号化方式である。RFC 4648 の Base32 と同じく 5 ビットごとに 1 文字を出力するが、アルファベットを毛筆判読性と OCR 耐性に配慮したひらがなで構成する。</p>
+
+<p>主用途は <strong>内容証明郵便</strong> での任意バイナリ (公開鍵等) の伝送。日本郵便の内容証明は文字種・字数に厳しい制約があり、生のバイナリや英数字混在が避けにくいため、ひらがな縛りの符号化を導入することで対応する。</p>
+
+<p>(注: Request-for-Cat 番号 4649 は IETF 非公認の語呂合わせ。本物の Base32 は <a href="https://www.rfc-editor.org/rfc/rfc4648" target="_blank" rel="noopener">RFC 4648</a>。)</p>
 
 <h2 id="sec-1">§1. 符号化仕様 (Encoding Spec)</h2>
 
-<h3>§1.1 アルファベット表</h3>
-<p>5ビット → ひらがな1文字。OCR誤認・毛筆判読性を考慮して以下32文字を採用 (除外したものについては §1.4 参照)。</p>
+<h3 id="sec-1-1">§1.1 アルファベット表</h3>
+<p>5 ビット (値域 0〜31) → ひらがな 1 文字。OCR 誤認・毛筆判読性を考慮して以下 32 文字を採用 (除外したものについては <a href="#sec-1-4">§1.4</a> 参照)。</p>
 
 <table class="alphabet-table">
   <thead><tr><th class="num">値</th><th>字</th><th class="num">値</th><th>字</th><th class="num">値</th><th>字</th><th class="num">値</th><th>字</th></tr></thead>
@@ -176,48 +166,69 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
   </tbody>
 </table>
 
-<h3>§1.2 パディング</h3>
-<p>末尾不足ビットの埋め草には <strong>句点「。」</strong> を使用。RFC 4648 と同じく、入力バイト長 mod 5 によって以下のパディング数:</p>
+<h3 id="sec-1-2">§1.2 ビット詰めとパディング</h3>
+
+<p>入力バイト列の上位ビットから順に 5 ビットずつ取り出してアルファベットを引く (RFC 4648 と同じ big-endian 順)。末尾の余りビットは 0 で埋めてもう 1 文字を出力し、5 バイト境界を満たすまで <strong>句点「。」</strong> をパディングとして付加する。</p>
+
+<p>入力バイト長 mod 5 と出力の関係:</p>
 
 <table>
-  <thead><tr><th class="num">入力バイト</th><th class="num">出力文字</th><th class="num">パディング</th></tr></thead>
+  <thead><tr><th class="num">入力バイト</th><th class="num">データ文字</th><th class="num">パディング「。」</th><th class="num">合計</th></tr></thead>
   <tbody>
-    <tr><td class="num">1</td><td class="num">2</td><td class="num">6</td></tr>
-    <tr><td class="num">2</td><td class="num">4</td><td class="num">4</td></tr>
-    <tr><td class="num">3</td><td class="num">5</td><td class="num">3</td></tr>
-    <tr><td class="num">4</td><td class="num">7</td><td class="num">1</td></tr>
-    <tr><td class="num">5</td><td class="num">8</td><td class="num">0</td></tr>
+    <tr><td class="num">1</td><td class="num">2</td><td class="num">6</td><td class="num">8</td></tr>
+    <tr><td class="num">2</td><td class="num">4</td><td class="num">4</td><td class="num">8</td></tr>
+    <tr><td class="num">3</td><td class="num">5</td><td class="num">3</td><td class="num">8</td></tr>
+    <tr><td class="num">4</td><td class="num">7</td><td class="num">1</td><td class="num">8</td></tr>
+    <tr><td class="num">5</td><td class="num">8</td><td class="num">0</td><td class="num">8</td></tr>
   </tbody>
 </table>
 
-<h3>§1.3 区切り文字</h3>
-<p>可読性のため、出力時は <strong>4文字ごとに中黒「・」</strong> を挿入する。デコード時は無視。</p>
-<p>例: <code>けせちひけ。。。</code> → <code>けせち・ひけ。。・。</code></p>
-<p>…と思ったが、4字区切りだとパディングがブロック境界で分断されて見苦しい。<strong>8文字ごとに改行 + 4文字ごとに「・」</strong> を推奨。</p>
+<p>すなわち 5 バイト (40 ビット) ごとに常に 8 文字を出力する。出力中の「。」の数で残バイト数が一意に決まる。</p>
 
-<pre><code>こいにち・けせちひ
-けお。。・。。。。</code></pre>
+<h3 id="sec-1-3">§1.3 区切り文字 (任意)</h3>
 
-<h3>§1.4 除外文字とその理由</h3>
+<p>可読性のため、出力時に区切り文字を挿入してよい。デコード時は無視 (<a href="#sec-2-3">§2.3</a>)。</p>
+
+<ul>
+  <li>4 文字ごとに中黒「・」</li>
+  <li>8 文字ごとに改行 (LF)</li>
+</ul>
+
+<p>推奨フォーマット例:</p>
+
+<table>
+  <thead><tr><th>入力</th><th>区切りなし</th><th>推奨フォーマット</th></tr></thead>
+  <tbody>
+    <tr><td><code>A</code> (1 バイト)</td><td><code>けお。。。。。。</code></td><td><code>けお。。・。。。。</code></td></tr>
+    <tr><td><code>Hello</code> (5 バイト)</td><td><code>こいとはふむえた</code></td><td><code>こいとは・ふむえた</code></td></tr>
+    <tr><td><code>HelloA</code> (6 バイト)</td><td colspan="2"><pre style="margin:0"><code>こいとはふむえたけお。。。。。。
+↓
+こいとは・ふむえた
+けお。。・。。。。</code></pre></td></tr>
+  </tbody>
+</table>
+
+<h3 id="sec-1-4">§1.4 除外文字とその理由</h3>
+
 <table>
   <thead><tr><th class="center">除外字</th><th>理由</th></tr></thead>
   <tbody>
-    <tr><td class="center">つ</td><td>シ/ツ問題、ち とも紛らわしい</td></tr>
+    <tr><td class="center">つ</td><td>カタカナ シ/ツ 判別困難、ひらがな ち とも紛らわしい</td></tr>
     <tr><td class="center">ぬ・め</td><td>相互判読不能</td></tr>
     <tr><td class="center">ね・れ・わ</td><td>三つ巴の混同</td></tr>
-    <tr><td class="center">る・ろ</td><td>上点の有無、毛筆で死ぬ</td></tr>
-    <tr><td class="center">ほ</td><td>は と混同 (横棒勝負)</td></tr>
+    <tr><td class="center">る・ろ</td><td>上点の有無、毛筆で判読困難</td></tr>
+    <tr><td class="center">ほ</td><td>は と混同 (横棒の差)</td></tr>
     <tr><td class="center">へ</td><td>カタカナ ヘ と完全一致、文字種規定の抜け穴判定リスク</td></tr>
-    <tr><td class="center">を</td><td>お との混同</td></tr>
+    <tr><td class="center">を</td><td>お と混同</td></tr>
     <tr><td class="center">ん</td><td>筆跡上 ソ と混同</td></tr>
-    <tr><td class="center">カタカナ全般</td><td>同音ひらがなと混同するため丸ごと不採用</td></tr>
+    <tr><td class="center">カタカナ全般</td><td>同音ひらがなと混同するため一切採用しない</td></tr>
   </tbody>
 </table>
 
 <h2 id="sec-2">§2. デコーダ寛容性 (Lenient Decoder)</h2>
-<p>Crockford Base32 の精神に倣う。<strong>生成は厳格・受理は寛容</strong> の原則。</p>
+<p>Crockford Base32 の精神に倣い、<strong>生成は厳格・受理は寛容</strong> を原則とする。</p>
 
-<h3>§2.1 カタカナ→ひらがな自動マッピング</h3>
+<h3 id="sec-2-1">§2.1 カタカナ→ひらがな自動マッピング</h3>
 <p>入力中の以下のカタカナは、対応するひらがなとして受理する:</p>
 <pre><code>ア→あ イ→い ウ→う エ→え オ→お
 カ→か キ→き ク→く ケ→け コ→こ
@@ -228,51 +239,54 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
 マ→ま ミ→み ム→む モ→も
 ヤ→や ユ→ゆ ヨ→よ</code></pre>
 
-<h3>§2.2 OCR救済マッピング (debatable)</h3>
-<p>警告を出した上で以下を受理:</p>
-<pre><code>ツ → し  (シ/ツ判別困難への救済)
+<h3 id="sec-2-2">§2.2 OCR 救済マッピング (debatable)</h3>
+<p>本符号外のカタカナだが、視覚的近似により以下を <strong>警告付きで</strong> 受理:</p>
+<pre><code>ツ → し  (シ/ツ 判別困難への救済)
 ヘ → ふ  (本来 へ だが本符号外なので最寄りへフォールバック)</code></pre>
 
-<h3>§2.3 完全に無視する文字</h3>
+<h3 id="sec-2-3">§2.3 完全に無視する文字</h3>
 <ul>
-  <li>ASCII空白 (スペース・タブ・改行)</li>
+  <li>ASCII 空白 (スペース / タブ / 改行 / CR)</li>
   <li>全角スペース</li>
   <li>中黒「・」</li>
-  <li>読点「、」(誤入力救済)</li>
+  <li>読点「、」 (誤入力救済)</li>
 </ul>
 
-<h3>§2.4 拒絶する文字</h3>
-<p>§1.4 の除外字 (つ ぬ ね め れ わ る ろ ほ へ を ん) と、対応マッピングのないカタカナ (ヌ ネ リ ル レ ロ メ など) は <strong>デコードエラー</strong> とし、位置と文字を明示してUI上でハイライト。</p>
+<h3 id="sec-2-4">§2.4 拒絶する文字</h3>
+<p><a href="#sec-1-4">§1.4</a> の除外字 (<code>つ ぬ ね め れ わ る ろ ほ へ を ん</code>) と、対応マッピングのないカタカナ (<code>ヌ ネ リ ル レ ロ メ</code> 等) は <strong>デコードエラー</strong> とし、入力中の位置と該当文字を実装は提示できなければならない。</p>
 
-<h3>§2.5 パディング検証</h3>
-<p>末尾の「。」の数が §1.2 の表と矛盾する場合はエラー。ただし <code>--lenient</code> モードでは末尾「。」の過不足を黙って補正してもよい (UIのトグルで切替)。</p>
+<h3 id="sec-2-5">§2.5 パディング検証</h3>
+<p>末尾の「。」の数が <a href="#sec-1-2">§1.2</a> の表と一致しない場合、厳格モードではエラー。寛容モードでは末尾「。」の過不足を黙って補正してよい (実装側でトグル提供を推奨)。</p>
+<p>本体中 (末尾以外) に「。」が現れた場合は寛容モードでも必ずエラーとする。</p>
 
-<h2 id="sec-3">§3. xxd 形式</h2>
+<h2 id="sec-3">§3. xxd 相互運用</h2>
 
-<h3>§3.1 既定形式 (xxd default)</h3>
+<p>本仕様自体は xxd に依存しないが、リファレンス実装が xxd と双方向変換を行うため、その動作を以下に規定する。</p>
+
+<h3 id="sec-3-1">§3.1 既定形式 (xxd default)</h3>
 <pre><code>00000000: 4865 6c6c 6f2c 2057 6f72 6c64 210a       Hello, World!.</code></pre>
 <ul>
-  <li>先頭: 16進オフセット8桁 + <code>: </code></li>
-  <li>中央: 2バイト (4hex) ごとにスペース、最大16バイト/行</li>
-  <li>右側: ASCII表現 (非印字は <code>.</code>)。<strong>パース時は無視</strong>。</li>
+  <li>先頭: 16 進オフセット 8 桁 + <code>: </code></li>
+  <li>中央: 2 バイト (4hex) ごとにスペース、最大 16 バイト/行</li>
+  <li>右側: ASCII 表現 (非印字は <code>.</code>)。<strong>パース時は無視</strong>。</li>
 </ul>
 
-<h3>§3.2 plain hex 形式 (xxd -p)</h3>
+<h3 id="sec-3-2">§3.2 plain hex 形式 (xxd -p)</h3>
 <pre><code>48656c6c6f2c20576f726c64210a</code></pre>
-<p>連続した16進文字列。行折り返しあり。</p>
+<p>連続した 16 進文字列。行折り返しあり。</p>
 
-<h3>§3.3 パーサ動作</h3>
+<h3 id="sec-3-3">§3.3 パーサ動作</h3>
 <ul>
-  <li>両形式を自動判定 (<code>:</code> の有無で判別)</li>
-  <li>16進以外の文字は黙ってスキップ (xxd -r 互換)</li>
+  <li>両形式を <code>:</code> の有無で自動判定</li>
+  <li>16 進以外の文字は黙ってスキップ (xxd -r 互換)</li>
   <li>奇数桁で終わった場合はエラー</li>
 </ul>
 
 <h2 id="sec-4">§4. テストベクトル</h2>
-<p>実装の正しさはこれで担保すること。<strong>全て検算済み</strong>。</p>
+<p>実装の正しさはこれで担保する。<strong>全て検算済み</strong>。</p>
 
 <table>
-  <thead><tr><th>平文 (UTF-8)</th><th>xxd -p</th><th>Nekono32</th></tr></thead>
+  <thead><tr><th>平文 (UTF-8)</th><th>xxd -p</th><th>Nekono's Base32 (パディング含む生出力)</th></tr></thead>
   <tbody>
     <tr><td>(空)</td><td>(空)</td><td>(空)</td></tr>
     <tr><td><code>A</code></td><td><code>41</code></td><td><code>けお。。。。。。</code></td></tr>
@@ -284,89 +298,35 @@ Request For Cat 4649 — 猫乃名無 (仮) 監修
   </tbody>
 </table>
 
-<h3>§4.1 ラウンドトリップテスト</h3>
-<p><code>xxd → Nekono32 → xxd</code> および <code>Nekono32 → xxd → Nekono32</code> が恒等関数になることを単体テストで確認すること (テストハーネスは別ファイル <code>test.html</code> に作ってもよい)。</p>
-
-<h3>§4.2 ファズテスト</h3>
-<p>ランダム生成した1〜1024バイトのバイナリ1000本でラウンドトリップが完全一致することを確認。</p>
-
-<h2 id="sec-5">§5. UI 要件</h2>
-
-<h3>§5.1 レイアウト</h3>
-<p>縦2ペイン (モバイル) / 横2ペイン (デスクトップ、768px以上)。中央に変換方向ボタン。</p>
-
-<pre><code>┌──────────────────────┐  ┌──────────────────────┐
-│  xxd / hex           │  │  Nekono's Base32     │
-│  ┌────────────────┐  │  │  ┌────────────────┐  │
-│  │                │  │⇄ │  │                │  │
-│  │  (textarea)    │  │  │  │  (textarea)    │  │
-│  │                │  │  │  │                │  │
-│  └────────────────┘  │  │  └────────────────┘  │
-│  [copy] [clear]      │  │  [copy] [clear]      │
-└──────────────────────┘  └──────────────────────┘</code></pre>
-
-<h3>§5.2 機能要件</h3>
+<h3 id="sec-4-1">§4.1 ラウンドトリップ要件</h3>
+<p>適合実装は以下の両方を満たさねばならない:</p>
 <ul>
-  <li><strong>リアルタイム変換</strong>: 片方を編集するともう片方が即座に更新 (debounce 100ms)</li>
-  <li><strong>方向ボタン</strong>: 中央の「⇄」で「どちらが入力ソースか」をトグル。ソース側だけが編集可、もう一方は読み取り専用。</li>
-  <li><strong>コピーボタン</strong>: 各ペイン下にクリップボードコピー</li>
-  <li><strong>エラー表示</strong>: パース失敗時、エラー位置の文字を赤背景でハイライトし、下部にメッセージ表示</li>
-  <li><strong>lenient モードトグル</strong>: チェックボックス。OFF だと §2.2 のカタカナ救済とパディング補正を行わない</li>
-  <li><strong>サンプル読み込み</strong>: 「例文を入れる」ボタン。テストベクトルからランダム1本ロード</li>
-  <li><strong>文字数カウンタ</strong>: 各ペインに「N文字 / Mバイト / 内容証明520字制限まであと…」を表示。<strong>520字を超えたら警告</strong>。</li>
-  <li><strong>ダウンロード</strong>: Nekono32 側に「.txt でダウンロード」ボタン。縦書きCSS適用版もオプションで。</li>
+  <li><code>bytes → encode → decode</code> が恒等</li>
+  <li><code>bytes → encode → format(区切り挿入) → decode</code> が恒等</li>
 </ul>
 
-<h3>§5.3 デザイン方針</h3>
+<h3 id="sec-4-2">§4.2 ファズ要件</h3>
+<p>1〜1024 バイトのランダム入力 1000 本でラウンドトリップが完全一致すること。</p>
+
+<h2 id="sec-5">§5. 参考実装とライセンス</h2>
+
 <ul>
-  <li>和風 (内容証明っぽい雰囲気)。背景はオフホワイト、本文はセリフ系日本語フォント (Noto Serif JP 等)。</li>
-  <li>ダークモード対応 (<code>prefers-color-scheme</code>)。</li>
-  <li>縦書きプレビューモード (<code>writing-mode: vertical-rl</code>) を切替で。これで内容証明の見本になる。</li>
-  <li>フォントサイズはユーザ調整可 (毛筆派閥向け)。</li>
+  <li><strong>リファレンス実装</strong>: <a href="https://github.com/nananek/nekono-no-kitei-sanjiuni" target="_blank" rel="noopener">github.com/nananek/nekono-no-kitei-sanjiuni</a> — 単一 HTML ファイル + Vanilla JS、依存ゼロ</li>
+  <li><strong>動作デモ</strong>: <a href="./index.html">変換器</a> / <a href="./test.html">テストランナ</a></li>
+  <li><strong>仕様ライセンス</strong>: 猫乃名無 (仮) 著, <a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener">CC BY 4.0</a></li>
+  <li><strong>実装ライセンス</strong>: MIT</li>
 </ul>
 
-<h3>§5.4 アクセシビリティ</h3>
+<h2 id="sec-6">§6. 将来拡張 (Out of Scope)</h2>
+
+<p>本仕様では未規定。議論のためのメモのみ:</p>
 <ul>
-  <li>すべてキーボード操作可能。</li>
-  <li>変換結果は <code>aria-live="polite"</code> で読み上げ対応 (ただし32音の読み上げは聞いてる方が辛いので、トグルでOFFに)。</li>
-</ul>
-
-<h2 id="sec-6">§6. 技術スタック</h2>
-<ul>
-  <li><strong>HTML + CSS + Vanilla JS</strong> のみ。フレームワーク禁止。ビルド禁止。</li>
-  <li>ES2022 (top-level await可)。Bun/Node等不要。<code>open index.html</code> で動くこと。</li>
-  <li><strong>Windows非依存</strong>。改行コードは LF。</li>
-  <li>単一ファイル <code>index.html</code> 推奨。CSSとJSはインライン or <code>&lt;script type="module"&gt;</code> で別ファイル分割は可。</li>
-  <li>文字コード UTF-8 (BOMなし)。</li>
-</ul>
-
-<h3>§6.1 ライブラリ</h3>
-<p>依存ゼロ。手書き実装。これは原理主義です。</p>
-
-<h3>§6.2 ファイル構成</h3>
-<pre><code>/
-├── index.html          # 本体
-├── README.md           # 使い方・RFC本文へのリンク
-└── test.html           # 単体テスト (任意)</code></pre>
-
-<h2 id="sec-7">§7. ライセンス・帰属</h2>
-<ul>
-  <li>仕様: 猫乃名無 (仮) 著、<a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener">CC BY 4.0</a></li>
-  <li>実装: お好きに (MIT 推奨)</li>
-  <li>Request-for-Cat 番号 4649 は IETF 非公認の語呂合わせです (本物の Base32 は <a href="https://www.rfc-editor.org/rfc/rfc4648" target="_blank" rel="noopener">RFC 4648</a>)。</li>
-</ul>
-
-<h2 id="sec-8">§8. 将来拡張 (Out of Scope, ただし議論用)</h2>
-<ul>
-  <li><strong>チェックサム</strong>: 末尾に大字 (零壱弐参肆伍陸漆捌玖拾佰仟萬) で mod-100 検査値2文字</li>
-  <li><strong>大字Base16版</strong>: もっと文字制限が厳しい場合用のフォールバック</li>
-  <li><strong>PGP armor互換ラッパ</strong>: <code>-----始める 猫乃の鍵-----</code> / <code>-----終わる 猫乃の鍵-----</code> で囲む</li>
-  <li><strong>縦書きPDF出力</strong>: 内容証明テンプレに流し込んで即郵送可能なPDFを生成</li>
-  <li><strong>OCRラウンドトリップ検証</strong>: 印刷→スキャン→OCR→復号が通るかを実機テスト</li>
+  <li><strong>チェックサム</strong>: 末尾に大字 (零壱弐参肆伍陸漆捌玖拾佰仟萬) で mod-100 検査値 2 文字を付加する案</li>
+  <li><strong>ヘッダ/フッタ枠</strong>: PGP armor 風に <code>-----始める 猫乃の鍵-----</code> / <code>-----終わる 猫乃の鍵-----</code> で囲む</li>
+  <li><strong>OCR ラウンドトリップ検証</strong>: 印刷 → スキャン → OCR → 復号が通るかの実機テスト</li>
 </ul>
 
 <hr>
-<p>以上。実装の際、§4のテストベクトルを最初に通してから§5のUIに進むこと。<code>4649</code> よろしく。</p>
 
 <footer class="site">
   <p>← <a href="./index.html">本体 (変換器)</a> ・ <a href="./test.html">テストランナ</a> ・ <a href="https://github.com/nananek/nekono-no-kitei-sanjiuni" target="_blank" rel="noopener">GitHub リポジトリ</a></p>
